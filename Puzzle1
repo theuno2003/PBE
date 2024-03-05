@@ -1,0 +1,39 @@
+require 'i2c/drivers/lcd'
+
+
+class LCD
+	def initialize(address)
+		@display = I2C::Drivers::LCD::Display.new('/dev/i2c-1',address, rows=20, cols=4)
+		@address = address
+	end
+
+	def show_string(string)
+		@display.clear
+		lines = string.split("\n")
+
+		if lines.length>4
+			@display.text(" Demasiadas lineas",1)
+			@display.text(" Maximo de lineas:4",2)
+		else
+      			i = 0
+      			while i < lines.length do
+				if lines[i].length>20
+					lines[i] = "#{lines[i][0...17]}..."
+				end
+    	  			@display.text(lines[i],i)
+	  			i = i + 1
+			end
+		end
+	end
+
+
+end
+
+
+lcd = LCD.new(0x27)
+
+puts "Escribe el mensaje (presiona Ctrl+D para finalizar):"
+text = $stdin.readlines
+message = text.join("") 
+
+lcd.show_string(message)
