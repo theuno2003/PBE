@@ -1,0 +1,71 @@
+require 'i2c/drivers/lcd'
+require 'gtk3'
+
+
+
+class LCD
+	def initialize(address)
+		@display = I2C::Drivers::LCD::Display.new('/dev/i2c-1',address, rows=20, cols=4)
+		@address = address
+	end
+
+	def show_string(string)
+		@display.clear
+		lines = string.split("\n")
+
+		if lines.length>4
+			@display.text(" Demasiadas lineas",1)
+			@display.text(" Maximo de lineas:4",2)
+		else
+      			i = 0
+      			while i < lines.length do
+				if lines[i].length>20
+					lines[i] = "#{lines[i][0...17]}..."
+				end
+    	  			@display.text(lines[i],i)
+	  			i = i + 1
+			end
+		end
+	end
+
+
+end
+
+
+lcd = LCD.new(0x27)
+
+
+app = Gtk::Application.new("org.gtk.example", :flags_none)
+
+app.signal_connect "activate" do |application|
+	window = Gtk::ApplicationWindow.new(application)
+	window.set_title("Puzzle 2")
+	window.set_default_size(300, 100)
+
+# Campo de texto para ingresar el texto
+	text_view = Gtk::TextView.new
+	text_view.set_wrap_mode(Gtk::WrapMode::WORD) # Ajuste de palabras
+	text_view.set_size_request(300, 100) # TamaÃ±o fijo del Ã¡rea de texto
+
+# BotÃ³n para enviar el texto
+	button = Gtk::Button.new(label: "Mostrar Texto")
+
+	button.signal_connect "clicked" do
+		buffer = text_view.buffer
+		text = buffer.text
+	# 	message = text.join("") 
+		lcd.show_string(text)
+	end
+
+# Crear un cuadro de rejilla para organizar los widgets
+	grid = Gtk::Grid.new
+	grid.attach(text_view, 0, 0, 2, 1)
+	grid.attach(button, 0, 1, 2, 1)
+
+	window.add(grid)
+
+	window.show_all
+
+end
+app.run
+
