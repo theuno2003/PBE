@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PBE</title>
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #f5f5f5;
+        }
+        .container {
+            width: 300px;
+            padding: 20px;
+            background-color: darkgray;
+            border: 1px solid black;
+            border-radius: 10px;
+            text-align: center;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+        .container-large {
+            width: 80vw;
+            padding: 20px;
+            background-color: darkgray;
+            border: 1px solid black;
+            border-radius: 10px;
+            text-align: center;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 20px;
+        }
+        th, td {
+            border: 1px solid #ddd;
+            padding: 8px;
+            text-align: left;
+        }
+        th {
+            background-color: #f2f2f2;
+        }
+        .logout-button {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background-color: red;
+            color: white;
+            border: none;
+            padding: 10px;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        #queryResult {
+            margin-top: 20px;
+            background-color: #fff;
+            border: 1px solid #ddd;
+            border-radius: 10px;
+            padding: 10px;
+            box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-height: 50vh;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="container-large" style="background-color:rgb(2, 119, 187); border: 1px solid black; text-align: center; border-radius: 10px; padding: 10px;">
+        <h2>Atenea</h2>
+    </div>
+    <br>
+    <div id="loginForm" class="container">
+        <form action="/login" method="POST">
+            <label for="username">Nombre de usuario:</label>
+            <input type="text" id="username" name="user" required><br><br>
+            <label for="password">Contraseña:</label>
+            <input type="password" id="password" name="password" required><br><br>
+            <button type="submit">Iniciar sesión</button>
+        </form>
+    </div>
+
+    <div id="queryForm" class="container" style="display: none;">
+        <button class="logout-button" id="logoutButton">Log out</button>
+        <h2>Realizar consulta</h2>
+        <form id="querySubmission" action="/query" method="POST">
+            <label for="queryInput">Consulta:</label>
+            <input type="text" id="queryInput" name="query" required><br><br>
+            <button type="submit">Enviar consulta</button>
+        </form>
+    </div>
+
+    <div id="queryResultContainer" class="container-large" style="display: none;">
+        <div id="queryResult"></div>
+    </div>
+
+    <script>
+        document.getElementById('loginForm').addEventListener('submit', function(event) {
+            event.preventDefault();
+            const user = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            fetch('/login', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ user, password })
+            })
+            .then(response => response.text())
+            .then(data => {
+                if (data.includes('Bienvenido')) {
+                    document.getElementById('loginForm').style.display = 'none';
+                    document.getElementById('queryForm').style.display = 'block';
+                } else {
+                    alert('Usuario o contraseña incorrectos');
+                }
+            })
+            .catch(error => console.error('Error:', error));
+        });
+
+        document.getElementById('querySubmission').addEventListener('submit', function(event) {
+            event.preventDefault();
+            const query = document.getElementById('queryInput').value;
+            fetch('/query', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ query })
+            })
+            .then(response => response.json())
+            .then(data => {
+                const queryResultDiv = document.getElementById('queryResult');
+                const queryResultContainer = document.getElementById('queryResultContainer');
+                queryResultContainer.style.display = 'block';
+                queryResultDiv.innerHTML = ''; // Limpiar el contenido anterior
+                if (data && data.length > 0) {
+                    const table = document.createElement('table');
+                    const headers = Object.keys(data[0]);
+                    const headerRow = document.createElement('tr');
+                    headers.forEach(header => {
+                        const th = document.createElement('th');
+                        th.textContent = header;
+                        headerRow.appendChild(th);
+                    });
+                    table.appendChild(headerRow);
+                    data.forEach(rowData => {
+                        const row = document.createElement('tr');
+                        headers.forEach(header => {
+                            const td = document.createElement('td');
+                            td.textContent = rowData[header];
+                            row.appendChild(td);
+                        });
+                        table.appendChild(row);
+                    });
+                    queryResultDiv.appendChild(table);
+                } else {
+                    queryResultDiv.textContent = 'No se encontraron resultados.';
+                }
+            })
+            .catch(error => console.error('Error:', error));
+        });
+
+        document.getElementById('logoutButton').addEventListener('click', function() {
+            document.getElementById('queryForm').style.display = 'none';
+            document.getElementById('queryResultContainer').style.display = 'none';
+            document.getElementById('loginForm').style.display = 'block';
+            document.getElementById('loginForm').reset();
+            document.getElementById('queryResult').innerHTML = '';
+        });
+    </script>
+</body>
+</html>
